@@ -1,102 +1,92 @@
-#include "minimap.h"
-int main()
-{
-    SDL_Init(SDL_INIT_VIDEO);
-    TTF_Init();
-    SDL_Surface *screen;
-    screen = SDL_SetVideoMode(1280, 700, 32, SDL_HWSURFACE | SDL_DOUBLEBUF); 
+#include<stdio.h>
+#include<SDL/SDL.h>
+#include<SDL/SDL_image.h>
+#include<SDL/SDL_ttf.h>
+#include<SDL/SDL_mixer.h>
+#include"bg.h"
+#include"game.h"
+int main() {
 
-    SDL_Event event;
-    minimap m;
-    temps t;
-    personne p;
-    p.perso = IMG_Load("./src/hero.png");
-    p.pos.x = 50;
-    p.pos.y = 400;
-    p.pos.w = p.perso->w;
-    p.pos.h = p.perso->h;
-    double redimention=0.2;
-    background back;
-    init_bg(&back);
+  int afficher_pers=0;
+int min=1900;
+int max=3000;
+int min2=1000;
+int max2=1900;
+int collision=0;
+int valueeee=0;
+  SDL_Surface * window=NULL ;
+  SDL_Event event;
+   int y = 0,x=0,check=0,next=7,pos_av=0,animui=1,death_timer=0,but=5,fpsof=1,bgg=1,xc=960;
+int coin_dir=0;
+  person pers,enemy,enemy2;
+   background bg,coin;
+   health h_bar,h;
+  Mix_Music * music=NULL;
+  Mix_Chunk * mus,*mus_coins,*walking;
+  int boucle = 1;
+  char gamename;
+  char chaine_nom[15]={'\0'};
+  text_pers txt_score,txt_time;
+  times t,t2;
+  SDL_Init(SDL_INIT_VIDEO);
+  window = (SDL_Surface*)malloc(sizeof(SDL_Surface));
+  window = SDL_SetVideoMode(0,0,32, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_SWSURFACE |SDL_FULLSCREEN );
+  initPerso(&pers);
+  inithealth(&h);
+  initBack(&bg);
+ init_enemy(&enemy);
+ init_enemy(&enemy2);
+ init_coin1(&coin,0,100);
 
-    SDL_EnableKeyRepeat(100, 10);
+ while (boucle) {   
+     bg.pos_img.y=0;
+    SDL_FillRect(window,NULL,0);
+    bg.pos_img.y=0;
+    init_bgimage(&bg,2);
+      inithealth_image(&h);   
+      
+     if(h.lives!=4)
+    { 
+    aficherBack(bg,window);
+    scrolling(&bg,pers.pos.x,&coin_dir,valueeee); 
 
-
-    int continuer = 1;
-    init_map(&m,p,back,screen,redimention);
-    initialiser_temps(&t); 
-
-
-    while (continuer)
-    {
-        afficher_background(back,screen);
-
-//printf("perso: x:%d \tcamera x:%d\tmini:x%d miniback:x%d\n",p.pos.x,back.camera.x,m.positionminijoueur.x,m.positionmap.x);
-        while (SDL_PollEvent(&event))
-        {
-            switch (event.type)
-            {
-            case SDL_QUIT:
-                continuer = 0;
-                break;
-            case SDL_KEYDOWN:
-                switch (event.key.keysym.sym)
-                {
-                    case SDLK_ESCAPE:
-                        continuer=0;
-                    break;
-                case SDLK_LEFT:
-                if ( back.camera.x!=0)
-                    scrolling(&back,0,p.pos,screen);
-                else if(p.pos.x-10>=0){
-                        p.pos.x -= 10;  
-                }
-                p.dir=3;
-                    break;
-                case SDLK_RIGHT:
-                    if(p.pos.x>=screen->w/4 && back.camera.x *-1+screen->w <back.masque->w){
-                        scrolling(&back,1,p.pos,screen);
-                    }else{
-                        p.pos.x +=10;
-                    } p.dir=4;
-                    break;
-                case SDLK_UP:
-                        p.pos.y -= 10;
-                        p.dir=1;
-                    break;
-                case SDLK_DOWN:
-                        p.pos.y += 10;
-                        p.dir=2;
-                    break;
-                case SDLK_l:
-                    charger(&p,&back ,"save.bin");
-                    break;
-                case SDLK_o:
-                    sauvegarder(p,back,"save.bin");
-                    break;          
-                }
-                break;
-            }
-        }
-        SDL_BlitSurface(p.perso, NULL, screen, &p.pos);        
+    movePerso (&pers,xc,bg.chck2,collision,&next,valueeee); 
+    animer_health(&h,&pers,pers.death);
+    afficherhealth(h,window);
+   
+  load_img_coin(&coin,coin.coin_counter);
+    if(coin.c1==0)
+    {afficher_coin(coin.coin,window,coin.pos_coin.x,coin.pos_coin.y);
+    move_coin1(&coin,pers.pos.x,pers.pos.y,coin_dir,bg,mus_coins,&t2.score);
+     } 
+    afficherPerso(pers,window);
+   if(pers.death>=90)
+   {h.lives=4;
+   next=8;
+   }
+    }
+ init_enemy_img(&enemy,enemy.enemy_counter,1);
+ afficher_enemy(enemy,window);
+ move_enemy(&enemy,enemy.enemy_dir,coin_dir,pers.pos.x,pers.pos.y,&h,&max,&min,0);
+ init_enemy_img(&enemy2,enemy2.enemy_counter,2);
+ afficher_enemy(enemy2,window);
+ move_enemy(&enemy2,enemy2.enemy_dir,coin_dir,pers.pos.x,pers.pos.y,&h,&max2,&min2,0);
  
-        animerminimap(&m);
-        MAJMinimap(p.pos, &m, back.camera,redimention); 
-        afficherminimap(m,back,screen,redimention); 
-        afficher_temps(&t, screen); 
-        printf("collision:%d?\n",collisionPP(p,back));
-      // printf("%d\n",c);
+    while (SDL_PollEvent( &event)) {
+      switch (event.type) {
+        case SDL_QUIT:
+          boucle = 0;
+          break;
+  
+          case SDL_KEYDOWN:
+          if (event.key.keysym.sym == SDLK_ESCAPE)
+          boucle=0;
        
-////////////////////////////////////////////////
-        SDL_Flip(screen);  
-        SDL_Delay(20);       
-    }     
-    SDL_FreeSurface(p.perso);
-    liberer_bg(&back);
-    liberermini(&m);
-    free_temps(&t);
-    TTF_Quit();
+      break;
+      }
+    }
+    SDL_Flip(window);
+    }
     SDL_Quit();
-
-    return 0;
+  return 0;
 }
